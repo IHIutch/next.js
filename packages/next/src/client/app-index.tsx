@@ -1,41 +1,16 @@
 import '../build/polyfills/polyfill-module'
-// @ts-ignore react-dom/client exists when using React 18
 import ReactDOMClient from 'react-dom/client'
 import React, { use } from 'react'
-// @ts-ignore
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { createFromReadableStream } from 'react-server-dom-webpack/client'
-
 import { HeadManagerContext } from '../shared/lib/head-manager-context.shared-runtime'
 import { onRecoverableError } from './on-recoverable-error'
 import { callServer } from './app-call-server'
-import { isNextRouterError } from './components/is-next-router-error'
 import {
   ActionQueueContext,
   createMutableActionQueue,
 } from '../shared/lib/router/action-queue'
 import { HMR_ACTIONS_SENT_TO_BROWSER } from '../server/dev/hot-reloader-types'
-
-// Since React doesn't call onerror for errors caught in error boundaries.
-const origConsoleError = window.console.error
-window.console.error = (...args) => {
-  // See https://github.com/facebook/react/blob/d50323eb845c5fde0d720cae888bf35dedd05506/packages/react-reconciler/src/ReactFiberErrorLogger.js#L78
-  if (
-    process.env.NODE_ENV !== 'production'
-      ? isNextRouterError(args[1])
-      : isNextRouterError(args[0])
-  ) {
-    return
-  }
-  origConsoleError.apply(window.console, args)
-}
-
-window.addEventListener('error', (ev: WindowEventMap['error']): void => {
-  if (isNextRouterError(ev.error)) {
-    ev.preventDefault()
-    return
-  }
-})
 
 /// <reference types="react-dom/experimental" />
 

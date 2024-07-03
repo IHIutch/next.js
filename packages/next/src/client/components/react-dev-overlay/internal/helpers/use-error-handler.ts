@@ -3,7 +3,6 @@ import {
   hydrationErrorState,
   getReactHydrationDiffSegments,
 } from './hydration-error-info'
-import { isNextRouterError } from '../../../is-next-router-error'
 import {
   isHydrationError,
   getDefaultHydrationErrorMessage,
@@ -26,10 +25,6 @@ const rejectionHandlers: Array<ErrorHandler> = []
 
 if (typeof window !== 'undefined') {
   function handleError(error: unknown) {
-    if (isNextRouterError(error)) {
-      return false
-    }
-
     if (
       !error ||
       !(error instanceof Error) ||
@@ -96,21 +91,10 @@ if (typeof window !== 'undefined') {
   window.addEventListener(
     'error',
     (event: WindowEventMap['error']): void | boolean => {
-      if (handleError(event.error) === false) {
-        event.preventDefault()
-        return false
-      }
+      handleError(event.error)
     }
   )
-  // caught errors go through console.error
-  const origConsoleError = window.console.error
-  window.console.error = (...args) => {
-    // See https://github.com/facebook/react/blob/d50323eb845c5fde0d720cae888bf35dedd05506/packages/react-reconciler/src/ReactFiberErrorLogger.js#L78
-    const error = process.env.NODE_ENV !== 'production' ? args[1] : args[0]
-    if (handleError(error) !== false) {
-      origConsoleError.apply(window.console, args)
-    }
-  }
+
   window.addEventListener(
     'unhandledrejection',
     (ev: WindowEventMap['unhandledrejection']): void => {
