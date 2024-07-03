@@ -1,4 +1,5 @@
 import { getHydrationErrorStackInfo } from '../../../is-hydration-error'
+import { isNextRouterError } from '../../../is-next-router-error'
 
 export type HydrationErrorState = {
   // Hydration warning template format: <message> <serverContent> <clientContent>
@@ -67,7 +68,16 @@ export const getReactHydrationDiffSegments = (msg: NullableText) => {
  */
 export function patchConsoleError() {
   const prev = console.error
-  console.error = function (msg, serverContent, clientContent, componentStack) {
+  console.error = function (...args: any[]) {
+    // See https://github.com/facebook/react/blob/d50323eb845c5fde0d720cae888bf35dedd05506/packages/react-reconciler/src/ReactFiberErrorLogger.js#L78
+    const reactLoggedError =
+      process.env.NODE_ENV !== 'production' ? args[1] : args[0]
+
+    // Avoid log errors of internal Next.js errors, like redirect error.
+    // TODO: move these logic to React onCaughtError callbacks.
+    if (isNextRouterError(reactLoggedError)) return
+
+    const [msg, serverContent, clientContent, componentStack] = args
     if (isKnownHydrationWarning(msg)) {
       hydrationErrorState.warning = [
         // remove the last %s from the message
