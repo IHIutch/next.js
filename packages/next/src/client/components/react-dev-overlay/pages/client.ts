@@ -21,7 +21,6 @@ import {
   isHydrationError,
 } from '../../is-hydration-error'
 
-// Patch console.error to collect information about hydration errors
 patchConsoleError()
 
 let isRegistered = false

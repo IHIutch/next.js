@@ -67,7 +67,7 @@ export const getReactHydrationDiffSegments = (msg: NullableText) => {
  * This results in a more helpful error message in the error overlay.
  */
 export function patchConsoleError() {
-  const prev = console.error
+  const originalConsoleError = console.error
   console.error = function (...args: any[]) {
     // See https://github.com/facebook/react/blob/d50323eb845c5fde0d720cae888bf35dedd05506/packages/react-reconciler/src/ReactFiberErrorLogger.js#L78
     const reactLoggedError =
@@ -77,20 +77,23 @@ export function patchConsoleError() {
     // TODO: move these logic to React onCaughtError callbacks.
     if (isNextRouterError(reactLoggedError)) return
 
-    const [msg, serverContent, clientContent, componentStack] = args
-    if (isKnownHydrationWarning(msg)) {
-      hydrationErrorState.warning = [
-        // remove the last %s from the message
-        msg,
-        serverContent,
-        clientContent,
-      ]
-      hydrationErrorState.componentStack = componentStack
-      hydrationErrorState.serverContent = serverContent
-      hydrationErrorState.clientContent = clientContent
+    // In dev mode, collect information about hydration errors in patched console
+    if (process.env.NODE_ENV !== 'production') {
+      const [msg, serverContent, clientContent, componentStack] = args
+      if (isKnownHydrationWarning(msg)) {
+        hydrationErrorState.warning = [
+          // remove the last %s from the message
+          msg,
+          serverContent,
+          clientContent,
+        ]
+        hydrationErrorState.componentStack = componentStack
+        hydrationErrorState.serverContent = serverContent
+        hydrationErrorState.clientContent = clientContent
+      }
     }
 
     // @ts-expect-error argument is defined
-    prev.apply(console, arguments)
+    originalConsoleError.apply(console, arguments)
   }
 }

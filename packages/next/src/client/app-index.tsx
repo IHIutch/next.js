@@ -11,6 +11,7 @@ import {
   createMutableActionQueue,
 } from '../shared/lib/router/action-queue'
 import { HMR_ACTIONS_SENT_TO_BROWSER } from '../server/dev/hot-reloader-types'
+import { patchConsoleError } from './components/react-dev-overlay/internal/helpers/hydration-error-info'
 
 /// <reference types="react-dom/experimental" />
 
@@ -154,6 +155,8 @@ function Root({ children }: React.PropsWithChildren<{}>) {
   return children
 }
 
+patchConsoleError()
+
 export function hydrate() {
   const actionQueue = createMutableActionQueue()
 
@@ -177,16 +180,6 @@ export function hydrate() {
   } satisfies ReactDOMClient.RootOptions
   const isError =
     document.documentElement.id === '__next_error__' || hasMissingTags
-
-  if (process.env.NODE_ENV !== 'production') {
-    // Patch console.error to collect information about hydration errors
-    const patchConsoleError =
-      require('./components/react-dev-overlay/internal/helpers/hydration-error-info')
-        .patchConsoleError as typeof import('./components/react-dev-overlay/internal/helpers/hydration-error-info').patchConsoleError
-    if (!isError) {
-      patchConsoleError()
-    }
-  }
 
   if (isError) {
     if (process.env.NODE_ENV !== 'production') {
