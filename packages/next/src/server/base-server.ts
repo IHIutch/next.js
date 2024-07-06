@@ -413,7 +413,7 @@ export default abstract class Server<
   protected getFastRefreshFetchCache():
     | LRUCache<string, CachedFetchData>
     | undefined {
-    return undefined
+    return (globalThis as any).__fastRefreshFetchCache
   }
 
   protected abstract loadEnvConfig(params: {
