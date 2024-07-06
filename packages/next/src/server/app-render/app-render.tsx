@@ -35,12 +35,7 @@ import {
   continueDynamicDataResume,
 } from '../stream-utils/node-web-streams-helper'
 import { stripInternalQueries } from '../internal-utils'
-import {
-  NEXT_ROUTER_PREFETCH_HEADER,
-  NEXT_ROUTER_STATE_TREE_HEADER,
-  NEXT_URL,
-  RSC_HEADER,
-} from '../../client/components/app-router-headers'
+import { NEXT_URL } from '../../client/components/app-router-headers'
 import {
   createMetadataComponents,
   createMetadataContext,
@@ -67,8 +62,6 @@ import {
   dynamicParamTypes,
 } from './get-short-dynamic-param-type'
 import { getSegmentParam } from './get-segment-param'
-import { getScriptNonceFromHeader } from './get-script-nonce-from-header'
-import { parseAndValidateFlightRouterState } from './parse-and-validate-flight-router-state'
 import { createFlightRouterStateFromLoaderTree } from './create-flight-router-state-from-loader-tree'
 import { handleAction } from './action-handler'
 import { isBailoutToCSRError } from '../../shared/lib/lazy-dynamic/bailout-to-csr'
@@ -116,6 +109,7 @@ import { createServerModuleMap } from './action-utils'
 import { isNodeNextRequest } from '../base-http/helpers'
 import { parseParameter } from '../../shared/lib/router/utils/route-regex'
 import { parseRelativeUrl } from '../../shared/lib/router/utils/parse-relative-url'
+import { parseRequestHeaders } from './parse-request-headers'
 
 export type GetDynamicParamFromSegment = (
   // [slug] / [[slug]] / [...slug]
@@ -751,25 +745,8 @@ async function renderToHTMLOrFlightImpl(
   query = { ...query }
   stripInternalQueries(query)
 
-  // We read these values from the request object as, in certain cases, base-server
-  // will strip them to opt into different rendering behavior.
-  const isRSCRequest = req.headers[RSC_HEADER.toLowerCase()] !== undefined
-  const isPrefetchRSCRequest =
-    isRSCRequest &&
-    req.headers[NEXT_ROUTER_PREFETCH_HEADER.toLowerCase()] !== undefined
-
-  /**
-   * Router state provided from the client-side router. Used to handle rendering
-   * from the common layout down. This value will be undefined if the request
-   * is not a client-side navigation request or if the request is a prefetch
-   * request.
-   */
-  const shouldProvideFlightRouterState =
-    isRSCRequest && (!isPrefetchRSCRequest || !isRoutePPREnabled)
-
-  const parsedFlightRouterState = parseAndValidateFlightRouterState(
-    req.headers[NEXT_ROUTER_STATE_TREE_HEADER.toLowerCase()]
-  )
+  const { flightRouterState, isPrefetchRequest, isRSCRequest, nonce } =
+    parseRequestHeaders(req.headers, { isRoutePPREnabled })
 
   /**
    * The metadata items array created in next-app-loader with all relevant information
@@ -793,25 +770,14 @@ async function renderToHTMLOrFlightImpl(
     pagePath
   )
 
-  // Get the nonce from the incoming request if it has one.
-  const csp =
-    req.headers['content-security-policy'] ||
-    req.headers['content-security-policy-report-only']
-  let nonce: string | undefined
-  if (csp && typeof csp === 'string') {
-    nonce = getScriptNonceFromHeader(csp)
-  }
-
   const ctx: AppRenderContext = {
     ...baseCtx,
     getDynamicParamFromSegment,
     query,
-    isPrefetch: isPrefetchRSCRequest,
+    isPrefetch: isPrefetchRequest,
     requestTimestamp,
     appUsingSizeAdjustment,
-    flightRouterState: shouldProvideFlightRouterState
-      ? parsedFlightRouterState
-      : undefined,
+    flightRouterState,
     requestId,
     defaultRevalidate: false,
     pagePath,
