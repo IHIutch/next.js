@@ -1,5 +1,6 @@
 import type { IncomingHttpHeaders } from 'http'
 import {
+  NEXT_FAST_REFRESH_HEADER,
   NEXT_ROUTER_PREFETCH_HEADER,
   NEXT_ROUTER_STATE_TREE_HEADER,
   RSC_HEADER,
@@ -21,6 +22,7 @@ export interface ParsedRequestHeaders {
    */
   readonly flightRouterState: FlightRouterState | undefined
   readonly isPrefetchRequest: boolean
+  readonly isFastRefresh: boolean
   readonly isRSCRequest: boolean
   readonly nonce: string | undefined
 }
@@ -33,6 +35,9 @@ export function parseRequestHeaders(
 ): ParsedRequestHeaders {
   const isPrefetchRequest =
     headers[NEXT_ROUTER_PREFETCH_HEADER.toLowerCase()] !== undefined
+
+  const isFastRefresh =
+    headers[NEXT_FAST_REFRESH_HEADER.toLowerCase()] !== undefined
 
   const isRSCRequest = headers[RSC_HEADER.toLowerCase()] !== undefined
 
@@ -52,5 +57,11 @@ export function parseRequestHeaders(
   const nonce =
     typeof csp === 'string' ? getScriptNonceFromHeader(csp) : undefined
 
-  return { flightRouterState, isPrefetchRequest, isRSCRequest, nonce }
+  return {
+    flightRouterState,
+    isPrefetchRequest,
+    isFastRefresh,
+    isRSCRequest,
+    nonce,
+  }
 }

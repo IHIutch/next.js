@@ -24,6 +24,7 @@ import {
   RSC_HEADER,
   RSC_CONTENT_TYPE_HEADER,
   NEXT_DID_POSTPONE_HEADER,
+  NEXT_FAST_REFRESH_HEADER,
 } from '../app-router-headers'
 import { urlToUrlWithoutFlightMarker } from '../app-router'
 import { callServer } from '../../app-call-server'
@@ -35,6 +36,7 @@ export interface FetchServerResponseOptions {
   readonly nextUrl: string | null
   readonly buildId: string
   readonly prefetchKind?: PrefetchKind
+  readonly isFastRefresh?: boolean
 }
 
 export type FetchServerResponseResult = [
@@ -56,13 +58,15 @@ export async function fetchServerResponse(
   url: URL,
   options: FetchServerResponseOptions
 ): Promise<FetchServerResponseResult> {
-  const { flightRouterState, nextUrl, buildId, prefetchKind } = options
+  const { flightRouterState, nextUrl, buildId, prefetchKind, isFastRefresh } =
+    options
 
   const headers: {
     [RSC_HEADER]: '1'
     [NEXT_ROUTER_STATE_TREE_HEADER]: string
     [NEXT_URL]?: string
     [NEXT_ROUTER_PREFETCH_HEADER]?: '1'
+    [NEXT_FAST_REFRESH_HEADER]?: '1'
     // A header that is only added in test mode to assert on fetch priority
     'Next-Test-Fetch-Priority'?: RequestInit['priority']
   } = {
@@ -82,6 +86,10 @@ export async function fetchServerResponse(
    */
   if (prefetchKind === PrefetchKind.AUTO) {
     headers[NEXT_ROUTER_PREFETCH_HEADER] = '1'
+  }
+
+  if (isFastRefresh) {
+    headers[NEXT_FAST_REFRESH_HEADER] = '1'
   }
 
   if (nextUrl) {

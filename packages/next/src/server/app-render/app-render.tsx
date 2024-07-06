@@ -109,7 +109,10 @@ import { createServerModuleMap } from './action-utils'
 import { isNodeNextRequest } from '../base-http/helpers'
 import { parseParameter } from '../../shared/lib/router/utils/route-regex'
 import { parseRelativeUrl } from '../../shared/lib/router/utils/parse-relative-url'
-import { parseRequestHeaders } from './parse-request-headers'
+import {
+  parseRequestHeaders,
+  type ParsedRequestHeaders,
+} from './parse-request-headers'
 
 export type GetDynamicParamFromSegment = (
   // [slug] / [[slug]] / [...slug]
@@ -126,6 +129,7 @@ type AppRenderBaseContext = {
   requestStore: RequestStore
   componentMod: AppPageModule
   renderOpts: RenderOpts
+  parsedRequestHeaders: ParsedRequestHeaders
 }
 
 export type GenerateFlight = typeof generateFlight
@@ -655,7 +659,7 @@ async function renderToHTMLOrFlightImpl(
   const digestErrorsMap: Map<string, Error> = new Map()
   const allCapturedErrors: Error[] = []
   const isNextExport = !!renderOpts.nextExport
-  const { staticGenerationStore, requestStore } = baseCtx
+  const { staticGenerationStore, requestStore, parsedRequestHeaders } = baseCtx
   const { isStaticGeneration } = staticGenerationStore
 
   /**
@@ -746,7 +750,7 @@ async function renderToHTMLOrFlightImpl(
   stripInternalQueries(query)
 
   const { flightRouterState, isPrefetchRequest, isRSCRequest, nonce } =
-    parseRequestHeaders(req.headers, { isRoutePPREnabled })
+    parsedRequestHeaders
 
   /**
    * The metadata items array created in next-app-loader with all relevant information
@@ -1426,9 +1430,15 @@ export const renderToHTMLOrFlight: AppPageRender = (
 
   const url = parseRelativeUrl(req.url, undefined, false)
 
+  const parsedRequestHeaders = parseRequestHeaders(req.headers, {
+    isRoutePPREnabled: renderOpts.experimental.isRoutePPREnabled === true,
+  })
+
+  const { isFastRefresh } = parsedRequestHeaders
+
   return withRequestStore(
     renderOpts.ComponentMod.requestAsyncStorage,
-    { req, url, res, renderOpts },
+    { req, url, res, renderOpts, isFastRefresh },
     (requestStore) =>
       withStaticGenerationStore(
         renderOpts.ComponentMod.staticGenerationAsyncStorage,
@@ -1449,6 +1459,7 @@ export const renderToHTMLOrFlight: AppPageRender = (
               staticGenerationStore,
               componentMod: renderOpts.ComponentMod,
               renderOpts,
+              parsedRequestHeaders,
             },
             staticGenerationStore.requestEndedState || {}
           )
