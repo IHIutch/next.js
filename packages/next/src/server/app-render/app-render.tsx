@@ -113,8 +113,7 @@ import {
   parseRequestHeaders,
   type ParsedRequestHeaders,
 } from './parse-request-headers'
-import type LRUCache from 'next/dist/compiled/lru-cache'
-import type { CachedFetchData } from '../response-cache'
+import type { FastRefreshFetchCache } from '../response-cache'
 
 export type GetDynamicParamFromSegment = (
   // [slug] / [[slug]] / [...slug]
@@ -1417,7 +1416,7 @@ export type AppPageRender = (
   pagePath: string,
   query: NextParsedUrlQuery,
   renderOpts: RenderOpts,
-  fastRefreshFetchCache?: LRUCache<string, CachedFetchData>
+  fastRefreshFetchCache?: FastRefreshFetchCache
 ) => Promise<RenderResult<AppPageRenderResultMetadata>>
 
 export const renderToHTMLOrFlight: AppPageRender = (

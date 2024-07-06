@@ -14,8 +14,8 @@ import type { RenderOptsPartial as PagesRenderOptsPartial } from './render'
 import type { RenderOptsPartial as AppRenderOptsPartial } from './app-render/types'
 import type {
   CachedAppPageValue,
-  CachedFetchData,
   CachedPageValue,
+  FastRefreshFetchCache,
   ResponseCacheBase,
   ResponseCacheEntry,
   ResponseGenerator,
@@ -153,7 +153,6 @@ import {
   type WaitUntil,
 } from './after/builtin-request-context'
 import { ENCODED_TAGS } from './stream-utils/encodedTags'
-import type LRUCache from 'next/dist/compiled/lru-cache'
 
 export type FindComponentsResult = {
   components: LoadComponentsReturnType
@@ -410,9 +409,7 @@ export default abstract class Server<
     dev: boolean
   }): ResponseCacheBase
 
-  protected getFastRefreshFetchCache():
-    | LRUCache<string, CachedFetchData>
-    | undefined {
+  protected getFastRefreshFetchCache(): FastRefreshFetchCache | undefined {
     return (globalThis as any).__fastRefreshFetchCache
   }
 
