@@ -436,6 +436,7 @@ export const configSchema: zod.ZodType<NextConfig> = z.lazy(() =>
             .optional(),
         ]),
         staticGenerationRetryCount: z.number().int().optional(),
+        fastRefreshFetchCache: z.boolean().optional(),
       })
       .optional(),
     exportPathMap: z

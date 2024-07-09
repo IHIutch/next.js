@@ -107,7 +107,7 @@ export default class DevServer extends Server {
   private actualInstrumentationHookFile?: string
   private middleware?: MiddlewareRoutingItem
   private originalFetch?: typeof fetch
-  private readonly fastRefreshFetchCache: FastRefreshFetchCache
+  private readonly fastRefreshFetchCache: FastRefreshFetchCache | undefined
   private readonly bundlerService: DevBundlerService
   private staticPathsCache: LRUCache<
     string,
@@ -194,10 +194,12 @@ export default class DevServer extends Server {
     this.pagesDir = pagesDir
     this.appDir = appDir
 
-    this.fastRefreshFetchCache = new LRUCache({
-      max: this.nextConfig.cacheMaxMemorySize,
-      length: (value) => JSON.stringify(value).length,
-    })
+    if (this.nextConfig.experimental.fastRefreshFetchCache) {
+      this.fastRefreshFetchCache = new LRUCache({
+        max: this.nextConfig.cacheMaxMemorySize,
+        length: (value) => JSON.stringify(value).length,
+      })
+    }
   }
 
   protected override getFastRefreshFetchCache() {
