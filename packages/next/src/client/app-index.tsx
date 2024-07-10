@@ -1,3 +1,5 @@
+/// <reference types="react-dom/experimental" />
+
 import '../build/polyfills/polyfill-module'
 import ReactDOMClient from 'react-dom/client'
 import React, { use } from 'react'
@@ -13,7 +15,7 @@ import {
 import { HMR_ACTIONS_SENT_TO_BROWSER } from '../server/dev/hot-reloader-types'
 import { patchConsoleError } from './components/react-dev-overlay/internal/helpers/hydration-error-info'
 
-/// <reference types="react-dom/experimental" />
+patchConsoleError()
 
 const appElement: HTMLElement | Document | null = document
 
@@ -154,8 +156,6 @@ function Root({ children }: React.PropsWithChildren<{}>) {
 
   return children
 }
-
-patchConsoleError()
 
 export function hydrate() {
   const actionQueue = createMutableActionQueue()

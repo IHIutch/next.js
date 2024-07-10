@@ -99,7 +99,7 @@ export function isRedirectError<U extends string>(
 ): error is RedirectError<U> {
   if (
     typeof error !== 'object' ||
-    error === null ||
+    error == null ||
     !('digest' in error) ||
     typeof error.digest !== 'string'
   ) {

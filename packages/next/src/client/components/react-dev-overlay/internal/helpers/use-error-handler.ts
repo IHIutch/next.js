@@ -7,6 +7,7 @@ import {
   isHydrationError,
   getDefaultHydrationErrorMessage,
 } from '../../../is-hydration-error'
+import { isNextRouterError } from '../../../is-next-router-error'
 
 export type ErrorHandler = (error: Error) => void
 
@@ -23,13 +24,12 @@ const rejectionQueue: Array<Error> = []
 const errorHandlers: Array<ErrorHandler> = []
 const rejectionHandlers: Array<ErrorHandler> = []
 
-function handleError(error: unknown) {
+export function createErrorWithHydrationState(error: unknown) {
   if (!error || !(error instanceof Error) || typeof error.stack !== 'string') {
     // A non-error was thrown, we don't have anything to show. :-(
     return
   }
 
-  const isCausedByHydrationFailure = isHydrationError(error)
   if (
     isHydrationError(error) &&
     !error.message.includes(
@@ -68,8 +68,17 @@ function handleError(error: unknown) {
     ;(error as any).details = parsedHydrationErrorState
   }
 
+  return error
+}
+
+function handleError(err: unknown) {
+  const error = createErrorWithHydrationState(err)
+  if (!error) {
+    return
+  }
+
   // Only queue one hydration every time
-  if (isCausedByHydrationFailure) {
+  if (isHydrationError(error)) {
     if (!hasHydrationError) {
       errorQueue.push(error)
     }
@@ -81,17 +90,27 @@ function handleError(error: unknown) {
 }
 
 if (typeof window !== 'undefined') {
-  // These event handlers must be added outside of the hook because there is no
-  // guarantee that the hook will be alive in a mounted component in time to
-  // when the errors occur.
-  // uncaught errors go through reportError
   window.addEventListener(
     'error',
     (event: WindowEventMap['error']): void | boolean => {
+      if (isNextRouterError(event.error)) {
+        event.preventDefault()
+        return
+      }
       handleError(event.error)
     }
   )
 
+  // Since React doesn't call onerror for errors caught in error boundaries.
+  const origConsoleError = window.console.error
+  window.console.error = (...args) => {
+    // See https://github.com/facebook/react/blob/d50323eb845c5fde0d720cae888bf35dedd05506/packages/react-reconciler/src/ReactFiberErrorLogger.js#L78
+    const err = process.env.NODE_ENV !== 'production' ? args[1] : args[0]
+    if (isNextRouterError(err)) {
+      return
+    }
+    origConsoleError.apply(window.console, args)
+  }
   window.addEventListener(
     'unhandledrejection',
     (ev: WindowEventMap['unhandledrejection']): void => {
